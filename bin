@@ -1,0 +1,81 @@
+import urllib.parse
+import re
+
+def convert_vless_link(original_link):
+    # Parse the original VLESS link
+    parsed_url = urllib.parse.urlparse(original_link)
+
+    # Extract the query parameters
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+
+    # Extract the id and name automatically
+    id_pattern = r"vless://([a-f0-9\-]+)@"
+    name_pattern = r"#EZvpn_FAST-([\w-]+)"
+
+    # Find the id and name using regex
+    id_match = re.search(id_pattern, original_link)
+    name_match = re.search(name_pattern, original_link)
+
+    if not id_match or not name_match:
+        return "Error: Could not detect 'id' or 'name' from the link."
+
+    # Extracted ID and Name
+    new_id = id_match.group(1)
+    new_name = name_match.group(1)
+
+    # Build the new query parameters
+    new_query_params = {
+        'encryption': ['none'],
+        'security': ['tls'],
+        'sni': ['speedtest.net'],            # Set the fake SNI
+        'allowInsecure': ['1'],              # Set allowInsecure to 1
+        'type': query_params.get('type', ['ws']),
+        'host': query_params.get('host', ['beskarmeTal.com']),
+        'path': query_params.get('path', ['/'])
+    }
+
+    # Build the new URL with modified fields
+    new_host = "fast.mandalor.site"  # Update the host
+    new_netloc = f"{new_id}@{new_host}:443"  # Updated ID and netloc
+    new_fragment = f"EZvpn_FAST-{new_name}"  # Update fragment with new name
+
+    # Rebuild the final query string
+    new_query_string = urllib.parse.urlencode(new_query_params, doseq=True)
+
+    # Construct the new VLESS URL
+    new_vless_link = urllib.parse.urlunparse((
+        parsed_url.scheme,      # 'vless' stays the same
+        new_netloc,             # Updated ID and host
+        parsed_url.path,        # Keep the same path
+        parsed_url.params,      # No params (same as original)
+        new_query_string,       # Updated query string
+        new_fragment            # Updated fragment
+    ))
+
+    return new_vless_link
+
+def process_multiple_links(links):
+    for link in links:
+        link = link.strip()  # Remove leading/trailing whitespace
+        if link:
+            converted_link = convert_vless_link(link)
+            print("\nConverted VLESS Link:\n", converted_link)
+
+# Get multiple VLESS links from the user
+print("Enter your VLESS links (one per line). Press Enter twice to finish:")
+
+links = []
+while True:
+
+
+    try:
+        line = input()
+        if not line:
+            break
+        links.append(line)
+    except EOFError:
+        break
+
+# Process the entered VLESS links
+process_multiple_links(links)
+
